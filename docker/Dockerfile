@@ -1,7 +1,7 @@
 FROM php:8.2-apache
 
 # Estensioni PHP utili
-RUN docker-php-ext-install pdo pdo_mysql
+RUN docker-php-ext-install pdo pdo_mysql mysqli
 
 # Abilita rewrite (utile se poi vuoi routing)
 RUN a2enmod rewrite
