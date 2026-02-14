@@ -3,67 +3,79 @@ require __DIR__ . '/../app/auth.php';
 $mysqli = require __DIR__ . '/../app/db.php';
 require_login();
 
-// Controllo sicurezza: Solo i bibliotecari possono accedere qui
-if ($_SESSION['user']['role'] !== 'librarian') {
-    die("Accesso negato. Area riservata ai bibliotecari.");
-}
+if ($_SESSION['user']['role'] !== 'librarian') die("Accesso negato.");
 
-// Query: Seleziona SOLO i prestiti NON ancora restituiti (return_date IS NULL)
-// Unisce tre tabelle: loans, books (per il titolo) e users (per il nome studente)
 $query = "SELECT loans.id as loan_id, books.title, users.full_name, loans.loan_date 
           FROM loans 
           JOIN books ON loans.book_id = books.id 
           JOIN users ON loans.user_id = users.id 
           WHERE loans.return_date IS NULL 
           ORDER BY loans.loan_date ASC";
-
 $result = $mysqli->query($query);
 ?>
 <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>Gestione Restituzioni - BiblioTech</title>
-    <style>
-        body { font-family: sans-serif; padding: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-        .btn-return { 
-            background-color: #d9534f; color: white; padding: 5px 10px; 
-            text-decoration: none; border-radius: 4px; 
-        }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Restituzioni</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body>
-    <a href="index.php">← Torna alla Dashboard</a>
-    <h1>Gestione Restituzioni</h1>
-    <p>Elenco dei libri attualmente fuori sede.</p>
+<body class="bg-light">
 
-    <table>
-        <thead>
-            <tr>
-                <th>Studente</th>
-                <th>Libro</th>
-                <th>Data Prestito</th>
-                <th>Azione</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php while ($row = $result->fetch_assoc()): ?>
-                <tr>
-                    <td><?= htmlspecialchars($row['full_name']) ?></td>
-                    <td><?= htmlspecialchars($row['title']) ?></td>
-                    <td><?= date('d/m/Y', strtotime($row['loan_date'])) ?></td>
-                    <td>
-                        <a href="azione_restituzione.php?id=<?= $row['loan_id'] ?>" 
-                           class="btn-return"
-                           onclick="return confirm('Confermi la restituzione del libro?');">
-                           RESTITUISCI
-                        </a>
-                    </td>
-                </tr>
-            <?php endwhile; ?>
-        </tbody>
-    </table>
+    <nav class="navbar navbar-dark bg-danger mb-4">
+        <div class="container">
+            <span class="navbar-brand">Area Bibliotecario</span>
+            <a href="index.php" class="btn btn-outline-light btn-sm">Torna alla Dashboard</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <?php if (isset($_GET['msg']) && $_GET['msg'] == 'restituito'): ?>
+            <div class="alert alert-success alert-dismissible fade show">
+                Libro restituito con successo! Le giacenze sono state aggiornate.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
+
+        <div class="card shadow-sm border-danger">
+            <div class="card-header bg-danger text-white">
+                <h4 class="mb-0">Prestiti Attivi (Da Restituire)</h4>
+            </div>
+            <div class="card-body">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Studente</th>
+                            <th>Libro</th>
+                            <th>Data Prestito</th>
+                            <th class="text-end">Azione</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if ($result->num_rows > 0): ?>
+                            <?php while ($row = $result->fetch_assoc()): ?>
+                                <tr>
+                                    <td class="fw-bold"><?= htmlspecialchars($row['full_name']) ?></td>
+                                    <td><?= htmlspecialchars($row['title']) ?></td>
+                                    <td><?= date('d/m/Y', strtotime($row['loan_date'])) ?></td>
+                                    <td class="text-end">
+                                        <a href="azione_restituzione.php?id=<?= $row['loan_id'] ?>" 
+                                           class="btn btn-danger btn-sm"
+                                           onclick="return confirm('Confermi la restituzione?');">
+                                           REGISTRA RESTITUZIONE
+                                        </a>
+                                    </td>
+                                </tr>
+                            <?php endwhile; ?>
+                        <?php else: ?>
+                            <tr><td colspan="4" class="text-center text-muted">Nessun prestito attivo al momento.</td></tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
