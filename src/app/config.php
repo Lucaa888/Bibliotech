@@ -1,5 +1,4 @@
 <?php
-// src/app/config.php
 
 return [
   'db' => [
